@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=1.5">
+  <title>明日方舟资源记录</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', 'Segoe UI', 'Roboto', 'Noto Sans SC', system-ui, sans-serif;
+      background: #f5f6f8; color: #1e1e1e; line-height: 1.5;
+      display: flex; justify-content: center; padding: 16px;
+      min-height: 100vh;
+    }
+    #app {
+      display: flex; gap: 16px; width: 100%; max-width: 1100px;
+      flex-wrap: wrap; justify-content: center;
+    }
+    .sidebar {
+      background: #fff; border-radius: 14px; padding: 18px;
+      border: 1px solid #e8e8e8; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      width: 220px; flex-shrink: 0; height: fit-content;
+      position: sticky; top: 16px;
+    }
+    .sidebar h3 { font-size: 1rem; margin-bottom: 12px; color: #111; }
+    .sidebar p, .sidebar li { font-size: 0.85rem; color: #444; margin-bottom: 6px; }
+    .sidebar ul { padding-left: 16px; }
+    .sidebar .preset-item { font-size: 0.8rem; padding: 4px 0; border-bottom: 1px solid #f0f0f0; }
+    .sidebar .important { color: #a33; font-weight: 600; }
+    .main-content { flex: 1; min-width: 0; max-width: 600px; width: 100%; }
+
+    .card {
+      background: #fff; border-radius: 14px; padding: 18px;
+      margin-bottom: 18px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+      border: 1px solid #e8e8e8;
+    }
+    .flex-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .btn {
+      background: #f2f2f2; border: 1px solid #ddd; padding: 8px 16px;
+      border-radius: 10px; font-weight: 600; cursor: pointer;
+      transition: 0.2s; color: #333; font-size: 0.9rem; line-height: 1.2;
+    }
+    .btn-primary { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+    .btn-danger { background: #fff; color: #c00; border-color: #fcc; }
+    .btn-small { padding: 4px 12px; font-size: 0.8rem; border-radius: 8px; }
+    .btn-icon { background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 4px; border-radius: 8px; }
+    .btn-icon:hover { background: #f0f0f0; }
+    .tag {
+      display: inline-block; background: #f0f0f0; border-radius: 8px;
+      padding: 2px 8px; font-size: 0.7rem; font-weight: 500; color: #555;
+    }
+    .tag-key { background: #e0e0e0; color: #222; font-weight: 600; }
+    input, select, textarea {
+      border: 1px solid #ddd; border-radius: 10px; padding: 10px 12px;
+      font-size: 0.9rem; width: 100%; background: #fafafa;
+      outline: none; transition: 0.2s; font-family: inherit; color: #111;
+    }
+    input:focus, select:focus { border-color: #aaa; background: #fff; }
+    .resource-badge {
+      background: #f7f7f7; color: #333; border-radius: 10px;
+      padding: 6px 12px; font-weight: 600; font-size: 0.8rem;
+      display: flex; justify-content: space-between; border: 1px solid #eee;
+    }
+    .list-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 0; border-bottom: 1px solid #f0f0f0;
+    }
+    .mt-2 { margin-top: 10px; }
+    .text-center { text-align: center; }
+    .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.4); display: flex; justify-content: center;
+      align-items: center; z-index: 1000;
+    }
+    .modal-content {
+      background: #fff; border-radius: 18px; padding: 24px;
+      width: 90%; max-width: 380px; box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      max-height: 80vh; overflow-y: auto; border: 1px solid #eaeaea;
+    }
+    .modal-content h3 { font-size: 1.1rem; margin-bottom: 12px; color: #111; }
+    .modal-resource-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 0; border-bottom: 1px solid #f2f2f2;
+    }
+    .autocomplete-dropdown {
+      position: absolute; background: #fff; border: 1px solid #ddd;
+      border-radius: 10px; width: 100%; z-index: 10;
+      max-height: 150px; overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+      margin-top: 4px;
+    }
+    .autocomplete-item { padding: 8px 14px; cursor: pointer; color: #333; }
+    .autocomplete-item:hover { background: #f5f5f5; }
+    .relative { position: relative; }
+    .pull-card { background: #f7f7f7; border: 1px solid #e0e0e0; }
+    .pull-value { font-size: 2.2rem; font-weight: 700; color: #111; }
+    .edit-row {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      padding: 8px 0; background: #fafafa; border-radius: 10px;
+    }
+    .edit-row input, .edit-row select { width: auto; padding: 6px 10px; font-size: 0.8rem; }
+    .option-btn {
+      text-align: left; padding: 12px; border: 1px solid #ddd; border-radius: 10px;
+      background: #fafafa; cursor: pointer; transition: 0.2s;
+    }
+    .option-btn:hover { background: #f0f0f0; }
+    .option-btn.selected { border-color: #1a1a1a; background: #f5f5f5; font-weight: 600; }
+    .result-block { margin-top: 12px; padding: 12px; background: #f9f9f9; border-radius: 10px; }
+
+    /* 标签栏样式调整 */
+    .tabs-container {
+      display: flex; gap: 8px; background: #fff; padding: 4px;
+      border-radius: 14px; margin-bottom: 18px;
+      border: 1px solid #e8e8e8; box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    }
+    .tab-item {
+      flex: 1; text-align: center; padding: 10px 4px; border-radius: 10px;
+      font-weight: 600; font-size: 0.9rem; cursor: pointer;
+      transition: 0.2s; color: #666; background: transparent; border: none;
+    }
+    .tab-item.active { background: #1a1a1a; color: #fff; }
+
+    /* 任务栏样式 */
+    .task-section { margin-bottom: 15px; }
+    .task-section h3 { font-size: 1rem; color: #111; margin-bottom: 8px; }
+    .task-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem;
+    }
+    .task-desc { flex: 1; margin-right: 10px; }
+    .task-progress { font-weight: 500; color: #555; margin-right: 10px; }
+
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .main-content { max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <!-- 左侧栏：计算逻辑 -->
+  <div class="sidebar" style="order: -1;">
+    <h3>📐 计算逻辑</h3>
+    <ul>
+      <li><b>抽数换算：</b><br>1源石 = 180合成玉<br>600合成玉 = 1抽</li>
+      <li><b>高级凭证(黄票)：</b><br>
+        · 第1档：10黄票换1抽<br>
+        · 第2档：18黄票换2抽（累计28票→3抽）<br>
+        · 第3档：40黄票换5抽（累计68票→8抽）<br>
+        · 第4档：70黄票换10抽（累计138票→18抽）<br>
+        · 第5档：120黄票换20抽（累计258票→38抽）<br>
+        <span class="important">推荐攒满258黄票一次性兑换。</span>
+      </li>
+      <li><b>资质凭证(绿票)：</b><br>
+        第一层可换：寻访凭证×2 (240/张) + 600合成玉(240绿票)<br>
+        换完后累计消耗720绿票，总消耗需达1490绿票开启第二层。<br>
+        <span class="important">萌新推荐每月只换第一层的2抽+600玉。</span>
+      </li>
+      <li><b>寻访凭证：</b>1张=1抽</li>
+      <li><b>资源别称：</b>输入“源石”→“至纯源石”，“黄票”→“高级凭证”等</li>
+      <li><b>固定收益备注：</b><br>
+        · 森空岛每月签到：300合成玉<br>
+        · 游戏内每月签到：10绿票(第10天)、1单抽(第17天)、5黄票(第25天)
+      </li>
+    </ul>
+  </div>
+
+  <!-- 中央主内容 -->
+  <div class="main-content">
+    <!-- 资源筛选配置弹窗 -->
+    <div v-if="showResourceConfig" class="modal-overlay" @click.self="showResourceConfig = false">
+      <div class="modal-content">
+        <h3>📋 选择显示资源</h3>
+        <p style="font-size:0.8rem; color:#555; margin-bottom:8px;">勾选你希望在总览中看到的资源</p>
+        <div v-for="res in allResourcesList" :key="res" class="modal-resource-item">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <input type="checkbox" v-model="resourceDisplayConfig[res]" style="width:auto;" />
+            <span>{{ res }}</span>
+          </div>
+        </div>
+        <div class="flex-row mt-2" style="justify-content: flex-end;">
+          <button class="btn btn-primary" @click="saveResourceConfig">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 每日固定收益弹窗 -->
+    <div v-if="showDailyPopup" class="modal-overlay" @click.self="ignoreDailyIncome">
+      <div class="modal-content">
+        <h3>📥 今日固定收益</h3>
+        <div v-for="(amount, res) in todayDailyRewards" :key="res" class="modal-resource-item">
+          <span>{{ res }}</span>
+          <strong>+{{ amount }}</strong>
+        </div>
+        <div class="flex-row mt-2" style="justify-content: flex-end; gap: 12px;">
+          <button class="btn" @click="ignoreDailyIncome">忽略</button>
+          <button class="btn btn-primary" @click="confirmDailyIncome">计入账单</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 抽数设置弹窗 -->
+    <div v-if="showPullSettings" class="modal-overlay" @click.self="showPullSettings = false">
+      <div class="modal-content">
+        <h3>⚙️ 抽数计算设置</h3>
+        <p style="font-size:0.8rem; color:#555; margin-bottom:12px;">勾选要纳入抽数计算的资源</p>
+        <div v-for="item in pullSettingsItems" :key="item.resource" class="modal-resource-item">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <input type="checkbox" v-model="item.checked" style="width:auto;" />
+            <span>{{ item.resource }}</span>
+          </div>
+          <span style="color:#666;">当前 {{ item.amount }}</span>
+        </div>
+        <div class="flex-row mt-2" style="justify-content: flex-end;">
+          <button class="btn btn-primary" @click="savePullSettings">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 规划转化弹窗 -->
+    <div v-if="showPlanConvertModal" class="modal-overlay" @click.self="showPlanConvertModal = false">
+      <div class="modal-content">
+        <h3>🔄 转化为抽数</h3>
+        <p style="font-size:0.8rem; color:#555; margin-bottom:8px;">请选择转化范围</p>
+        <div class="option-btn" :class="{ selected: planConvertMode === 'income' }" @click="planConvertMode = 'income'">仅使用预计收益</div>
+        <div class="option-btn mt-2" :class="{ selected: planConvertMode === 'total' }" @click="planConvertMode = 'total'">加入当前资源转化</div>
+        <button class="btn btn-primary mt-2" @click="executePlanConvert">计算</button>
+        <div v-if="planConvertResult" class="result-block">
+          <div style="font-weight:600;">计算结果</div>
+          <div class="pull-value">{{ planConvertResult }}</div>
+          <div v-if="planConvertBreakdown && Object.keys(planConvertBreakdown).length" style="font-size:0.8rem; color:#555; margin-top:4px; display:flex; flex-wrap:wrap; gap:8px;">
+            <span v-for="(val, key) in planConvertBreakdown" :key="key">{{ key }} {{ val }}</span>
+          </div>
+        </div>
+        <div class="flex-row mt-2" style="justify-content: flex-end;">
+          <button class="btn" @click="showPlanConvertModal = false">关闭</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 攒抽目标弹窗 -->
+    <div v-if="showGoalModal" class="modal-overlay" @click.self="showGoalModal = false">
+      <div class="modal-content">
+        <h3>🎯 攒抽目标</h3>
+        <div class="mt-2">
+          <label>目标抽数：</label>
+          <input v-model.number="goalAmount" type="number" min="0" style="width:120px;" />
+        </div>
+        <div class="mt-2">
+          <div class="option-btn" :class="{ selected: goalMode === 'income' }" @click="goalMode = 'income'">仅计算固定收益</div>
+          <div class="option-btn mt-2" :class="{ selected: goalMode === 'total' }" @click="goalMode = 'total'">包含现有资源</div>
+        </div>
+        <button class="btn btn-primary mt-2" @click="calculateGoal">计算</button>
+        <div v-if="goalResultText" class="result-block mt-2">{{ goalResultText }}</div>
+        <div class="flex-row mt-2" style="justify-content: flex-end;">
+          <button class="btn" @click="showGoalModal = false">关闭</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 标题栏 -->
+    <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+      <h2 style="font-size:1.4rem;">📦 资源记录</h2>
+    </div>
+
+    <!-- 标签栏 -->
+    <div class="tabs-container">
+      <div class="tab-item" :class="{ active: currentTab === 'ledger' }" @click="currentTab = 'ledger'">📒 账本</div>
+      <div class="tab-item" :class="{ active: currentTab === 'task' }" @click="currentTab = 'task'">📋 任务</div>
+      <div class="tab-item" :class="{ active: currentTab === 'plan' }" @click="currentTab = 'plan'">📆 规划</div>
+    </div>
+
+    <!-- 账本界面 -->
+    <div v-if="currentTab === 'ledger'">
+      <div class="card">
+        <div class="flex-row" style="justify-content: space-between;">
+          <strong>当前资源</strong>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-small" @click="openResourceConfig">🔍 筛选</button>
+            <button class="btn btn-small" @click="showInitBalance = !showInitBalance">⚙️ 设置初始</button>
+          </div>
+        </div>
+        <div v-if="showInitBalance" class="card" style="background:#fafafa; margin-top:10px;">
+          <p style="font-size:0.8rem; color:#555;">修改后流水不变，余额基于初始+流水自动计算</p>
+          <div v-for="res in displayedResources" :key="res" class="flex-row" style="justify-content:space-between; margin-bottom:6px;">
+            <span>{{ res }}</span>
+            <input type="number" v-model.number="initialBalance[res]" style="width:120px;" />
+          </div>
+          <button class="btn btn-primary btn-small mt-2" @click="saveInitialBalance">保存</button>
+        </div>
+        <div class="summary-grid mt-2">
+          <div v-for="(amount, res) in visibleBalances" :key="res" class="resource-badge">
+            <span>{{ res }}</span><strong>{{ amount }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="card pull-card">
+        <div class="flex-row" style="justify-content: space-between; align-items: center;">
+          <strong>🎯 可抽次数</strong>
+          <button class="btn-icon" @click="openPullSettings" title="设置计算项">⚙️</button>
+        </div>
+        <div class="mt-2 text-center">
+          <div v-if="pullResult !== null" class="pull-value">{{ pullResult }}</div>
+          <div v-else style="color:#999; padding:12px;">点击右上齿轮设置计算项</div>
+        </div>
+        <div v-if="pullBreakdown && Object.keys(pullBreakdown).length" style="font-size:0.8rem; color:#555; margin-top:4px; display:flex; flex-wrap:wrap; gap:8px; justify-content:center;">
+          <span v-for="(val, key) in pullBreakdown" :key="key">{{ key }} {{ val }}</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <strong>记录收支</strong>
+        <div class="flex-row mt-2">
+          <select v-model="newRecord.type" style="width:100px;">
+            <option value="income">收入</option>
+            <option value="expense">支出</option>
+          </select>
+          <div class="relative" style="flex:1;">
+            <input v-model="newRecord.resource" placeholder="资源名(输入关键词自动提示)" @input="onResourceInput" @focus="showSuggestion = true" @blur="handleBlur" />
+            <div class="autocomplete-dropdown" v-if="showSuggestion && filteredResources.length > 0">
+              <div v-for="res in filteredResources" :key="res" class="autocomplete-item" @mousedown.prevent="selectResource(res)">{{ res }}</div>
+            </div>
+          </div>
+          <input v-model.number="newRecord.amount" type="number" placeholder="数量" style="width:100px;" min="0"/>
+        </div>
+        <div class="flex-row mt-2">
+          <input type="date" v-model="newRecord.date" />
+          <input v-model="newRecord.note" placeholder="备注(如周任务)" />
+          <button class="btn btn-primary" @click="addRecord">添加</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <strong>历史记录</strong>
+        <div v-if="records.length === 0" style="color:#999; padding:20px; text-align:center;">暂无记录</div>
+        <div v-for="rec in paginatedRecords" :key="rec.id">
+          <div v-if="editingRecordId === rec.id" class="edit-row">
+            <select v-model="editTemp.type" style="width:80px;">
+              <option value="income">收入</option>
+              <option value="expense">支出</option>
+            </select>
+            <div class="relative" style="flex:1; min-width:120px;">
+              <input v-model="editTemp.resource" placeholder="资源名" @input="onEditResourceInput" @focus="editShowSuggestion = true" @blur="handleEditBlur" />
+              <div class="autocomplete-dropdown" v-if="editShowSuggestion && editFilteredResources.length > 0">
+                <div v-for="res in editFilteredResources" :key="res" class="autocomplete-item" @mousedown.prevent="selectEditResource(res)">{{ res }}</div>
+              </div>
+            </div>
+            <input v-model.number="editTemp.amount" type="number" style="width:80px;" min="0" />
+            <input type="date" v-model="editTemp.date" style="width:120px;" />
+            <input v-model="editTemp.note" placeholder="备注" style="width:100px;" />
+            <button class="btn btn-primary btn-small" @click="saveEdit(rec.id)">保存</button>
+            <button class="btn btn-small" @click="cancelEdit">取消</button>
+          </div>
+          <div v-else class="list-item">
+            <div style="display:flex; gap:8px; align-items:center;">
+              <span :style="{color: rec.type==='income'?'#2e7d32':'#c62828'}">{{ rec.type==='income' ? '💰收入' : '💸支出' }}</span>
+              <span class="tag">{{ rec.resource }}</span>
+              <strong>{{ rec.amount }}</strong>
+            </div>
+            <div style="font-size:0.75rem; color:#666; text-align:right;">
+              <div>{{ rec.date }}</div>
+              <div>{{ rec.note }}</div>
+            </div>
+            <div style="display:flex; gap:4px;">
+              <button class="btn btn-small" @click="startEdit(rec)">改</button>
+              <button class="btn btn-danger btn-small" @click="deleteRecord(rec.id)">删</button>
+            </div>
+          </div>
+        </div>
+        <div class="flex-row mt-2" style="justify-content:space-between;" v-if="records.length > pageSize">
+          <button class="btn btn-small" @click="ledgerPage = Math.max(1, ledgerPage-1)">上一页</button>
+          <span>第 {{ ledgerPage }} / {{ totalPages }}</span>
+          <button class="btn btn-small" @click="ledgerPage = Math.min(totalPages, ledgerPage+1)">下一页</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 任务界面 -->
+    <div v-if="currentTab === 'task'">
+      <div class="card">
+        <div class="task-section">
+          <h3>📅 每日任务</h3>
+          <div v-for="(task, idx) in dailyTasks" :key="'d'+idx" class="task-item">
+            <span class="task-desc">{{ task.name }}</span>
+            <span class="task-progress">+{{ task.progress }}进度</span>
+            <span class="tag" style="margin-left:6px;">{{ task.reward }}</span>
+          </div>
+          <button class="btn btn-primary btn-small mt-2" @click="completeAllTasks('daily')">✅ 一键完成全部每日任务</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="task-section">
+          <h3>📅 每周任务</h3>
+          <div v-for="(task, idx) in weeklyTasks" :key="'w'+idx" class="task-item">
+            <span class="task-desc">{{ task.name }}</span>
+            <span class="task-progress">+{{ task.progress }}进度</span>
+            <span class="tag" style="margin-left:6px;">{{ task.reward }}</span>
+          </div>
+          <button class="btn btn-primary btn-small mt-2" @click="completeAllTasks('weekly')">✅ 一键完成全部每周任务</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 规划界面 -->
+    <div v-if="currentTab === 'plan'">
+      <div class="card">
+        <strong>📅 固定收益计算</strong>
+        <div class="flex-row mt-2">
+          <label>起始：<input type="date" v-model="planStart" /></label>
+          <label>结束：<input type="date" v-model="planEnd" /></label>
+        </div>
+        <button class="btn btn-primary mt-2" @click="calculatePlan">计算收益</button>
+        <div v-if="planResult" class="mt-2 card" style="background:#fafafa;">
+          <strong>计算结果</strong>
+          <div class="summary-grid mt-2">
+            <div v-for="(val, res) in planResult" :key="res" class="resource-badge">
+              <span>{{ res }}</span><strong>{{ val }}</strong>
+            </div>
+          </div>
+          <details class="mt-2"><summary>详细来源</summary>
+            <div v-for="item in planDetails" :key="item.name">{{ item.name }} ({{ item.type }})：{{ item.rewards.map(r=>r.resource+r.amount).join('，') }}</div>
+          </details>
+          <button class="btn btn-primary mt-2" @click="openPlanConvert">🔄 转化为抽数</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="flex-row" style="justify-content:space-between;">
+          <strong>🎯 攒抽目标</strong>
+          <button class="btn btn-primary btn-small" @click="openGoalModal">设置目标</button>
+        </div>
+        <div v-if="goalResultText" class="result-block mt-2">{{ goalResultText }}</div>
+      </div>
+
+      <div class="card">
+        <div class="flex-row" style="justify-content:space-between;">
+          <strong>预设固定收入</strong>
+          <button class="btn btn-small" @click="showPresetEditor = !showPresetEditor">编辑</button>
+        </div>
+        <div v-if="showPresetEditor">
+          <div v-for="(preset, idx) in fixedIncomes" :key="preset.id" class="list-item">
+            <div style="flex:1;">
+              <div class="flex-row">
+                <input type="checkbox" v-model="preset.active" style="width:auto;" /> {{ preset.name }}
+                <span class="tag">{{ preset.type === 'daily' ? '每日' : preset.type === 'weekly' ? '每周' : '每月' }}</span>
+              </div>
+              <div class="flex-row" style="gap:4px; flex-wrap:wrap;">
+                <div v-for="(rew, ridx) in preset.rewards" :key="ridx" style="display:flex; gap:2px; align-items:center;">
+                  <input v-model="rew.resource" style="width:70px; font-size:0.7rem;" />
+                  <input v-model.number="rew.amount" type="number" style="width:60px; font-size:0.7rem;" />
+                  <button class="btn btn-danger btn-small" @click="preset.rewards.splice(ridx,1)">x</button>
+                </div>
+                <button class="btn btn-small" @click="preset.rewards.push({resource:'', amount:0})">+奖励</button>
+              </div>
+            </div>
+            <button class="btn btn-danger btn-small" @click="fixedIncomes.splice(idx,1)">删除</button>
+          </div>
+          <button class="btn btn-primary btn-small mt-2" @click="addCustomPreset">+ 自定义项目</button>
+          <button class="btn btn-small mt-2" @click="savePresets">保存预设</button>
+        </div>
+        <div v-else>
+          <div v-for="pre in activePresets" :key="pre.id" style="font-size:0.85rem; padding:2px 0;">✅ {{ pre.name }} ({{ pre.type==='daily'?'每日':pre.type==='weekly'?'每周':'每月' }})</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 右侧栏：固定收益速查 -->
+  <div class="sidebar" style="order: 1;">
+    <h3>📋 固定收益速查</h3>
+    <div v-if="activePresets.length === 0" style="color:#999;">暂无启用预设</div>
+    <div v-for="group in groupedPresets" :key="group.type" class="mt-2">
+      <strong>{{ group.label }}</strong>
+      <div v-for="item in group.items" :key="item.name" class="preset-item">
+        · {{ item.name }}：{{ item.rewardsStr }}
+      </div>
+    </div>
+    <p class="mt-2" style="font-size:0.75rem; color:#666;">* 基于当前启用的预设</p>
+  </div>
+</div>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script>
+  const { createApp, ref, reactive, computed, watch, onMounted } = Vue;
+
+  // ---------- 任务数据 ----------
+  const dailyTasks = [
+    { name: '通过任意关卡1次', progress: 1, reward: '龙门币+200' },
+    { name: '在主线关卡/物资筹备中击败敌方首领1次', progress: 2, reward: '基础作战记录+2' },
+    { name: '使用演习券1次', progress: 2, reward: '技巧概要·卷1+1' },
+    { name: '完成任意1个每日任务', progress: 3, reward: '合成玉+20' },
+    { name: '在基建中与干员互动', progress: 3, reward: '信用+20' },
+  ];
+  const weeklyTasks = [
+    { name: '通过任意关卡20次', progress: 5, reward: '龙门币+2000' },
+    { name: '在主线关卡/物资筹备中击败敌方首领10次', progress: 10, reward: '技巧概要·卷2+3' },
+    { name: '消耗600理智', progress: 10, reward: '合成玉+50' },
+    { name: '完成每日任务7次', progress: 10, reward: '寻访凭证+1' },
+    { name: '在基建中收获制造产物20个', progress: 15, reward: '龙门币+3000' },
+  ];
+
+  const RESOURCE_PRIORITY = {
+    '合成玉': 1, '至纯源石': 2, '龙门币': 3,
+    '寻访凭证': 4, '高级凭证': 5, '资质凭证': 6, '采购凭证': 7,
+    '技巧概要·卷3': 8, '基础作战记录': 9, '中级作战记录': 10, '高级作战记录': 11
+  };
+  const ALL_RESOURCES = Object.keys(RESOURCE_PRIORITY);
+  const RESOURCE_ALIAS = {
+    '源石': '至纯源石', '玉': '合成玉', '黄票': '高级凭证',
+    '绿票': '资质凭证', '红票': '采购凭证', '单抽': '寻访凭证', '石头': '至纯源石'
+  };
+
+  createApp({
+    setup() {
+      const currentTab = ref('ledger');
+
+      // ---------- 显示资源筛选 ----------
+      const showResourceConfig = ref(false);
+      const resourceDisplayConfig = reactive({});
+      const displayedResources = ref([]);
+      const allResourcesList = ALL_RESOURCES;
+
+      function initDisplayResources() {
+        const saved = localStorage.getItem('ak_displayed_resources');
+        if (saved) {
+          const arr = JSON.parse(saved);
+          displayedResources.value = arr.filter(r => ALL_RESOURCES.includes(r));
+        } else {
+          displayedResources.value = [...ALL_RESOURCES];
+          showResourceConfig.value = true;
+        }
+        ALL_RESOURCES.forEach(r => {
+          resourceDisplayConfig[r] = displayedResources.value.includes(r);
+        });
+      }
+
+      function openResourceConfig() {
+        ALL_RESOURCES.forEach(r => {
+          resourceDisplayConfig[r] = displayedResources.value.includes(r);
+        });
+        showResourceConfig.value = true;
+      }
+
+      function saveResourceConfig() {
+        const selected = ALL_RESOURCES.filter(r => resourceDisplayConfig[r]);
+        if (selected.length === 0) {
+          alert('至少保留一项资源显示');
+          return;
+        }
+        displayedResources.value = selected;
+        localStorage.setItem('ak_displayed_resources', JSON.stringify(selected));
+        showResourceConfig.value = false;
+      }
+
+      const visibleBalances = computed(() => {
+        const bal = currentBalances.value;
+        const filtered = {};
+        displayedResources.value.forEach(res => {
+          if (bal[res] !== undefined) filtered[res] = bal[res];
+        });
+        return filtered;
+      });
+
+      // ---------- 初始化余额 ----------
+      const initialBalance = reactive(loadInitialBalance());
+      const showInitBalance = ref(false);
+
+      function loadInitialBalance() {
+        const saved = localStorage.getItem('ak_initial_balance');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          ALL_RESOURCES.forEach(r => { if (!(r in parsed)) parsed[r] = 0; });
+          return parsed;
+        }
+        const def = {};
+        ALL_RESOURCES.forEach(r => def[r] = 0);
+        return def;
+      }
+      function saveInitialBalance() {
+        localStorage.setItem('ak_initial_balance', JSON.stringify(initialBalance));
+        showInitBalance.value = false;
+      }
+
+      // ---------- 流水记录 ----------
+      const records = ref(loadRecords());
+      const newRecord = reactive({ type: 'income', resource: '', amount: 0, date: new Date().toISOString().slice(0,10), note: '' });
+      const showSuggestion = ref(false);
+      const filteredResources = computed(() => {
+        const input = newRecord.resource.trim();
+        if (!input) return [];
+        return ALL_RESOURCES.filter(r => r.includes(input) || r.toLowerCase().includes(input.toLowerCase()))
+          .sort((a,b) => (RESOURCE_PRIORITY[a]||999) - (RESOURCE_PRIORITY[b]||999));
+      });
+      function onResourceInput() { showSuggestion.value = true; }
+      function selectResource(res) { newRecord.resource = res; showSuggestion.value = false; }
+      function handleBlur() {
+        setTimeout(() => {
+          const alias = RESOURCE_ALIAS[newRecord.resource.trim()];
+          if (alias && ALL_RESOURCES.includes(alias)) newRecord.resource = alias;
+          showSuggestion.value = false;
+        }, 150);
+      }
+
+      function loadRecords() { return JSON.parse(localStorage.getItem('ak_records') || '[]'); }
+      function saveRecords() { localStorage.setItem('ak_records', JSON.stringify(records.value)); }
+
+      const ledgerPage = ref(1);
+      const pageSize = 8;
+      const totalPages = computed(() => Math.ceil(records.value.length / pageSize) || 1);
+      const paginatedRecords = computed(() => {
+        const start = (ledgerPage.value-1) * pageSize;
+        return records.value.slice().reverse().slice(start, start + pageSize);
+      });
+
+      const currentBalances = computed(() => {
+        const balance = { ...initialBalance };
+        records.value.forEach(rec => {
+          if (!balance[rec.resource]) balance[rec.resource] = 0;
+          balance[rec.resource] += rec.type === 'income' ? rec.amount : -rec.amount;
+        });
+        return balance;
+      });
+
+      function addRecord() {
+        const res = newRecord.resource.trim();
+        if (!res || newRecord.amount <= 0) return alert('请输入资源和数量');
+        const alias = RESOURCE_ALIAS[res];
+        const finalRes = alias && ALL_RESOURCES.includes(alias) ? alias : res;
+        records.value.push({
+          id: Date.now(), type: newRecord.type, resource: finalRes,
+          amount: newRecord.amount, date: newRecord.date, note: newRecord.note
+        });
+        saveRecords();
+        newRecord.amount = 0; newRecord.note = ''; newRecord.resource = '';
+        ledgerPage.value = 1;
+      }
+      function deleteRecord(id) {
+        if (editingRecordId.value === id) cancelEdit();
+        records.value = records.value.filter(r => r.id !== id);
+        saveRecords();
+      }
+
+      // ---------- 编辑记录 ----------
+      const editingRecordId = ref(null);
+      const editTemp = reactive({ type: 'income', resource: '', amount: 0, date: '', note: '' });
+      const editShowSuggestion = ref(false);
+      const editFilteredResources = computed(() => {
+        const input = editTemp.resource.trim();
+        if (!input) return [];
+        return ALL_RESOURCES.filter(r => r.includes(input) || r.toLowerCase().includes(input.toLowerCase()))
+          .sort((a,b) => (RESOURCE_PRIORITY[a]||999) - (RESOURCE_PRIORITY[b]||999));
+      });
+      function onEditResourceInput() { editShowSuggestion.value = true; }
+      function selectEditResource(res) { editTemp.resource = res; editShowSuggestion.value = false; }
+      function handleEditBlur() {
+        setTimeout(() => {
+          const alias = RESOURCE_ALIAS[editTemp.resource.trim()];
+          if (alias && ALL_RESOURCES.includes(alias)) editTemp.resource = alias;
+          editShowSuggestion.value = false;
+        }, 150);
+      }
+      function startEdit(rec) {
+        editingRecordId.value = rec.id;
+        editTemp.type = rec.type; editTemp.resource = rec.resource;
+        editTemp.amount = rec.amount; editTemp.date = rec.date; editTemp.note = rec.note;
+      }
+      function saveEdit(id) {
+        const rec = records.value.find(r => r.id === id);
+        if (rec) {
+          const alias = RESOURCE_ALIAS[editTemp.resource.trim()];
+          if (alias && ALL_RESOURCES.includes(alias)) editTemp.resource = alias;
+          rec.type = editTemp.type; rec.resource = editTemp.resource;
+          rec.amount = editTemp.amount; rec.date = editTemp.date; rec.note = editTemp.note;
+          saveRecords();
+        }
+        cancelEdit();
+      }
+      function cancelEdit() { editingRecordId.value = null; }
+
+      // ---------- 任务 ----------
+      function completeAllTasks(type) {
+        const tasks = type === 'daily' ? dailyTasks : weeklyTasks;
+        const today = new Date().toISOString().slice(0,10);
+        const note = type === 'daily' ? '一键完成每日任务' : '一键完成每周任务';
+        tasks.forEach(task => {
+          // 简单解析奖励（格式：资源名+数量）
+          const match = task.reward.match(/^(.+)\+(\d+)$/);
+          if (match) {
+            records.value.push({
+              id: Date.now() + Math.random(),
+              type: 'income',
+              resource: match[1],
+              amount: parseInt(match[2]),
+              date: today,
+              note: note
+            });
+          }
+        });
+        saveRecords();
+        alert(`已记录${type === 'daily' ? '每日' : '每周'}任务奖励！`);
+      }
+
+      // ---------- 规划 ----------
+      const planStart = ref(new Date().toISOString().slice(0,10));
+      const planEnd = ref(getDefaultEndDate());
+      const planResult = ref(null);
+      const planDetails = ref([]);
+      const showPresetEditor = ref(false);
+      function getDefaultEndDate() { const d = new Date(); d.setMonth(d.getMonth()+1); return d.toISOString().slice(0,10); }
+      const defaultPresets = [
+        { id: 1, name: '每日任务', type: 'daily', active: true, rewards: [{resource:'合成玉',amount:100},{resource:'龙门币',amount:2000}] },
+        { id: 2, name: '每周任务', type: 'weekly', active: true, rewards: [{resource:'合成玉',amount:500},{resource:'龙门币',amount:5000}] },
+        { id: 3, name: '剿灭作战', type: 'weekly', active: true, rewards: [{resource:'合成玉',amount:1800}] },
+        { id: 4, name: '月卡', type: 'daily', active: false, rewards: [{resource:'合成玉',amount:200}] },
+        { id: 5, name: '森空岛每月签到', type: 'monthly', active: true, rewards: [{resource:'合成玉',amount:300}] },
+        { id: 6, name: '游戏内每月签到', type: 'monthly', active: true, rewards: [{resource:'资质凭证',amount:10},{resource:'寻访凭证',amount:1},{resource:'高级凭证',amount:5}] }
+      ];
+      const fixedIncomes = ref(JSON.parse(localStorage.getItem('ak_fixed_incomes')) || JSON.parse(JSON.stringify(defaultPresets)));
+      const activePresets = computed(() => fixedIncomes.value.filter(p => p.active));
+      function savePresets() {
+        localStorage.setItem('ak_fixed_incomes', JSON.stringify(fixedIncomes.value));
+        showPresetEditor.value = false;
+      }
+      function addCustomPreset() {
+        fixedIncomes.value.push({ id: Date.now(), name: '自定义', type: 'daily', active: true, rewards: [{resource:'',amount:0}] });
+      }
+      function calculatePlan() {
+        const start = new Date(planStart.value), end = new Date(planEnd.value);
+        if (start > end) return alert('起始日期不能晚于结束日期');
+        const dayDiff = Math.floor((end-start)/(86400000)) + 1;
+        let mondays = 0, cursor = new Date(start);
+        while (cursor <= end) { if (cursor.getDay()===1) mondays++; cursor.setDate(cursor.getDate()+1); }
+        let monthlyCount = 0;
+        let monthCursor = new Date(start.getFullYear(), start.getMonth(), 1);
+        while (monthCursor <= end) {
+          if (monthCursor >= start) monthlyCount++;
+          monthCursor.setMonth(monthCursor.getMonth() + 1);
+        }
+        const result = {}, details = [];
+        activePresets.value.forEach(p => {
+          let times = 0;
+          if (p.type === 'daily') times = dayDiff;
+          else if (p.type === 'weekly') times = mondays;
+          else if (p.type === 'monthly') times = monthlyCount;
+          if (times <= 0) return;
+          const det = { name: p.name, type: p.type==='daily'?'每日':p.type==='weekly'?'每周':'每月', rewards: [] };
+          p.rewards.forEach(r => {
+            if (!r.resource || r.amount<=0) return;
+            const total = r.amount * times;
+            result[r.resource] = (result[r.resource]||0) + total;
+            det.rewards.push({ resource: r.resource, amount: total });
+          });
+          details.push(det);
+        });
+        planResult.value = result; planDetails.value = details;
+      }
+
+      // ---------- 规划转化 ----------
+      const showPlanConvertModal = ref(false);
+      const planConvertMode = ref('income');
+      const planConvertResult = ref(null);
+      const planConvertBreakdown = ref({});
+      function openPlanConvert() {
+        if (!planResult.value) return;
+        planConvertMode.value = 'income';
+        planConvertResult.value = null;
+        planConvertBreakdown.value = {};
+        showPlanConvertModal.value = true;
+      }
+      function executePlanConvert() {
+        const incomeData = planResult.value || {};
+        const currentData = currentBalances.value || {};
+        const merged = {};
+        if (planConvertMode.value === 'total') {
+          const allKeys = new Set([...Object.keys(incomeData), ...Object.keys(currentData)]);
+          allKeys.forEach(k => { merged[k] = (incomeData[k] || 0) + (currentData[k] || 0); });
+        } else Object.assign(merged, incomeData);
+        const res = calcPulls(merged);
+        planConvertResult.value = res.total;
+        planConvertBreakdown.value = res.breakdown;
+      }
+
+      function calcPulls(balances) {
+        const ps = pullSettings;
+        let total = 0;
+        const breakdown = {};
+        if (ps.originite && balances['至纯源石']) {
+          const v = balances['至纯源石'] * 180 / 600;
+          total += v; breakdown['源石'] = v.toFixed(1) + '抽';
+        }
+        if (ps.orundum && balances['合成玉']) {
+          const v = balances['合成玉'] / 600;
+          total += v; breakdown['合成玉'] = v.toFixed(1) + '抽';
+        }
+        if (ps.yellow_cert && balances['高级凭证']) {
+          let certs = balances['高级凭证'], pulls = 0;
+          if (certs >= 258) pulls = 38;
+          else if (certs >= 138) pulls = 18;
+          else if (certs >= 68) pulls = 8;
+          else if (certs >= 28) pulls = 3;
+          else if (certs >= 10) pulls = 1;
+          total += pulls; if (pulls) breakdown['高级凭证'] = pulls + '抽';
+        }
+        if (ps.green_cert && balances['资质凭证']) {
+          let certs = balances['资质凭证'], pulls = 0;
+          if (certs >= 720) pulls = 3;
+          else if (certs >= 480) pulls = 2;
+          else if (certs >= 240) pulls = 1;
+          total += pulls; if (pulls) breakdown['资质凭证'] = pulls + '抽';
+        }
+        if (ps.ticket && balances['寻访凭证']) {
+          const v = balances['寻访凭证'];
+          total += v; breakdown['寻访凭证'] = v + '抽';
+        }
+        return { total: total.toFixed(1) + ' 抽', breakdown };
+      }
+
+      // ---------- 攒抽目标 ----------
+      const showGoalModal = ref(false);
+      const goalAmount = ref(300);
+      const goalMode = ref('income');
+      const goalResultText = ref('');
+      function openGoalModal() {
+        goalAmount.value = 300; goalMode.value = 'income'; goalResultText.value = '';
+        showGoalModal.value = true;
+      }
+      function calculateGoal() {
+        const target = parseFloat(goalAmount.value);
+        if (!target || target <= 0) return alert('请输入有效目标抽数');
+        if (activePresets.value.length === 0) return alert('请先启用至少一个固定收入预设');
+        const startBal = goalMode.value === 'total' ? { ...currentBalances.value } : {};
+        let current = { ...startBal };
+        let days = 0;
+        const maxDays = 3650;
+        const today = new Date();
+        while (days < maxDays) {
+          const simDate = new Date(today.getTime() + (days+1)*86400000);
+          activePresets.value.forEach(p => {
+            if (p.type === 'daily') p.rewards.forEach(r => { if (r.resource && r.amount>0) current[r.resource] = (current[r.resource]||0)+r.amount; });
+            if (p.type === 'weekly' && simDate.getDay() === 1) p.rewards.forEach(r => { if (r.resource && r.amount>0) current[r.resource] = (current[r.resource]||0)+r.amount; });
+            if (p.type === 'monthly' && simDate.getDate() === 1) p.rewards.forEach(r => { if (r.resource && r.amount>0) current[r.resource] = (current[r.resource]||0)+r.amount; });
+          });
+          days++;
+          if (parseFloat(calcPulls(current).total) >= target) break;
+        }
+        if (days >= maxDays) {
+          goalResultText.value = '无法在10年内达成目标';
+        } else {
+          const reachDate = new Date(today.getTime() + days*86400000);
+          const dateStr = `${reachDate.getFullYear()}-${String(reachDate.getMonth()+1).padStart(2,'0')}-${String(reachDate.getDate()).padStart(2,'0')}`;
+          goalResultText.value = `预计需要 ${days} 天，将在 ${dateStr} 达到 ${target} 抽`;
+        }
+      }
+
+      // ---------- 每日弹窗 ----------
+      const showDailyPopup = ref(false);
+      const todayDailyRewards = ref({});
+      function getTodayDailyRewards() {
+        const rewards = {};
+        activePresets.value.filter(p => p.type==='daily').forEach(p => {
+          p.rewards.forEach(r => { if (r.resource && r.amount>0) rewards[r.resource] = (rewards[r.resource]||0)+r.amount; });
+        });
+        return rewards;
+      }
+      function checkDailyPopup() {
+        const today = new Date().toISOString().slice(0,10);
+        if (localStorage.getItem('ak_daily_popup_date') !== today) {
+          const rewards = getTodayDailyRewards();
+          if (Object.keys(rewards).length) { todayDailyRewards.value = rewards; showDailyPopup.value = true; }
+          else localStorage.setItem('ak_daily_popup_date', today);
+        }
+      }
+      function confirmDailyIncome() {
+        const today = new Date().toISOString().slice(0,10);
+        const rewards = getTodayDailyRewards();
+        Object.entries(rewards).forEach(([res, amount]) => {
+          records.value.push({ id: Date.now()+Math.random(), type:'income', resource:res, amount, date:today, note:'今日固定收益' });
+        });
+        saveRecords();
+        localStorage.setItem('ak_daily_popup_date', today);
+        showDailyPopup.value = false;
+      }
+      function ignoreDailyIncome() {
+        localStorage.setItem('ak_daily_popup_date', new Date().toISOString().slice(0,10));
+        showDailyPopup.value = false;
+      }
+
+      // ---------- 抽数设置 ----------
+      const showPullSettings = ref(false);
+      const pullSettings = reactive(JSON.parse(localStorage.getItem('ak_pull_settings')) || { originite: true, orundum: true, yellow_cert: true, green_cert: true, ticket: true });
+      const pullSettingsItems = ref([]);
+      function openPullSettings() {
+        const bal = currentBalances.value;
+        pullSettingsItems.value = [
+          { resource: '至纯源石', key: 'originite', checked: pullSettings.originite, amount: bal['至纯源石']||0 },
+          { resource: '合成玉', key: 'orundum', checked: pullSettings.orundum, amount: bal['合成玉']||0 },
+          { resource: '高级凭证', key: 'yellow_cert', checked: pullSettings.yellow_cert, amount: bal['高级凭证']||0 },
+          { resource: '资质凭证', key: 'green_cert', checked: pullSettings.green_cert, amount: bal['资质凭证']||0 },
+          { resource: '寻访凭证', key: 'ticket', checked: pullSettings.ticket, amount: bal['寻访凭证']||0 }
+        ];
+        showPullSettings.value = true;
+      }
+      function savePullSettings() {
+        pullSettingsItems.value.forEach(item => { pullSettings[item.key] = item.checked; });
+        localStorage.setItem('ak_pull_settings', JSON.stringify(pullSettings));
+        showPullSettings.value = false;
+        calculatePull();
+      }
+      const pullResult = ref(null);
+      const pullBreakdown = ref({});
+      function calculatePull() {
+        const res = calcPulls(currentBalances.value);
+        pullResult.value = res.total;
+        pullBreakdown.value = res.breakdown;
+      }
+
+      const groupedPresets = computed(() => {
+        const groups = { daily: [], weekly: [], monthly: [] };
+        activePresets.value.forEach(p => {
+          const rewardStr = p.rewards.filter(r => r.resource && r.amount > 0).map(r => `${r.resource}+${r.amount}`).join('，');
+          if (p.type === 'daily') groups.daily.push({ name: p.name, rewardsStr: rewardStr });
+          else if (p.type === 'weekly') groups.weekly.push({ name: p.name, rewardsStr: rewardStr });
+          else if (p.type === 'monthly') groups.monthly.push({ name: p.name, rewardsStr: rewardStr });
+        });
+        return [
+          { type: 'daily', label: '每日', items: groups.daily },
+          { type: 'weekly', label: '每周', items: groups.weekly },
+          { type: 'monthly', label: '每月', items: groups.monthly }
+        ];
+      });
+
+      watch([currentBalances, () => pullSettings.originite, () => pullSettings.orundum, () => pullSettings.yellow_cert, () => pullSettings.green_cert, () => pullSettings.ticket], calculatePull, { deep: true });
+      watch(records, saveRecords, { deep: true });
+
+      onMounted(() => {
+        initDisplayResources();
+        checkDailyPopup();
+        calculatePull();
+      });
+
+      return {
+        currentTab,
+        showResourceConfig, resourceDisplayConfig, displayedResources, allResourcesList, openResourceConfig, saveResourceConfig,
+        initialBalance, showInitBalance, saveInitialBalance,
+        visibleBalances, currentBalances,
+        records, newRecord, addRecord, deleteRecord,
+        ledgerPage, pageSize, totalPages, paginatedRecords,
+        showSuggestion, filteredResources, onResourceInput, selectResource, handleBlur,
+        editingRecordId, editTemp, editShowSuggestion, editFilteredResources, startEdit, saveEdit, cancelEdit,
+        onEditResourceInput, selectEditResource, handleEditBlur,
+        planStart, planEnd, planResult, planDetails,
+        fixedIncomes, showPresetEditor, savePresets, addCustomPreset, activePresets, calculatePlan,
+        showDailyPopup, todayDailyRewards, confirmDailyIncome, ignoreDailyIncome,
+        showPullSettings, pullSettingsItems, openPullSettings, savePullSettings,
+        pullResult, pullBreakdown,
+        showPlanConvertModal, planConvertMode, planConvertResult, planConvertBreakdown, openPlanConvert, executePlanConvert,
+        showGoalModal, goalAmount, goalMode, goalResultText, openGoalModal, calculateGoal,
+        groupedPresets, calcPulls,
+        dailyTasks, weeklyTasks, completeAllTasks
+      };
+    }
+  }).mount('#app');
+</script>
+</body>
+</html>
